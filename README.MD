@@ -1,4 +1,4 @@
-# CSOD-API-Java-Chars
+# CSOD-API-Java-Charts
 This code demonstrates the use of the CSOD API by binding data warehouse data to a google chart
 
 To get started
