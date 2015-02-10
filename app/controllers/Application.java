@@ -28,26 +28,29 @@ public class Application extends Controller {
     public static Result index() {
         return ok(index.render("Your new application is ready."));
     }
-    
+
+    /**
+     * This is an example of calling the CSOD data warehouse and combining the data from two calls.
+     * @return The JSON representation of a the aggregate of user compensation for a location
+     */
     public static Result data(){
         CsodConfig config = new CsodConfig(); 
-        config.setPortal("demopm.csod.com");
-        config.setSessionToken("1ki43lap4igkv");
-        config.setSessionSecret("egNY4u6sJQFYeKB5yMfa4izFGhfbpZKziFoq4kK69pEtVWBicPktJHp7/beji1uLQlWLJm9Rt6TL0PCIurWQUw==");
+        config.setPortal(Play.application().configuration().getString("csod.portal"));
+        config.setSessionToken(Play.application().configuration().getString("csod.sessionToken"));
+        config.setSessionSecret(Play.application().configuration().getString("csod.sessionSecret"));
 
         CsodApi api = new CsodApi(config); 
         try {
             String compJson = api.getData("CurrentCompensation", "$select=UserID,CurrentCompaRatio,CurrentSalary", true);
             String userJson = api.getData("User", "$select=UserID,UserDivision,UserPosition,UserLocation,UserManagerId", true);
 
-            // code to convert to jason
+            // code to convert from JSON
             ObjectMapper compMapper = new ObjectMapper();
             ObjectMapper userMapper = new ObjectMapper();
             compMapper.setPropertyNamingStrategy(new LowerCaseNaming());
             userMapper.setPropertyNamingStrategy(new LowerCaseNaming());
-            //Compensation comp = mapper.readValue(compJson, Compensation.class);
 
-            ArrayList<UserCompensation> userComp = new ArrayList<UserCompensation>();
+            //set up grouping
             HashMap<String, UserCompensationGroup> groupByLocation = new HashMap<String, UserCompensationGroup>(); 
             
             JsonNode node = null;
@@ -60,10 +63,11 @@ public class Application extends Controller {
                 node = node.get("value");
                 ArrayList<User> users = userMapper.readValue(node.toString(), new TypeReference<ArrayList<User>>(){});
 
+                //join and group data
                 for(User u : users){
                     for(Compensation c : comp){
                         if(u.getId() == c.getUserID()){
-                            userComp.add(new UserCompensation(u,c));
+                           
                             UserCompensationGroup group; 
                             if(groupByLocation.containsKey(u.getUserLocation())){
                                 group = groupByLocation.get(u.getUserLocation()); 
@@ -92,9 +96,9 @@ public class Application extends Controller {
     }
     public static Result employees(){
         CsodConfig config = new CsodConfig();
-        config.setPortal("demopm.csod.com");
-        config.setSessionToken("1ki43lap4igkv");
-        config.setSessionSecret("egNY4u6sJQFYeKB5yMfa4izFGhfbpZKziFoq4kK69pEtVWBicPktJHp7/beji1uLQlWLJm9Rt6TL0PCIurWQUw==");
+        config.setPortal(Play.application().configuration().getString("csod.portal"));
+        config.setSessionToken(Play.application().configuration().getString("csod.sessionToken"));
+        config.setSessionSecret(Play.application().configuration().getString("csod.sessionSecret"));
 
         CsodApi api = new CsodApi(config);
         try {

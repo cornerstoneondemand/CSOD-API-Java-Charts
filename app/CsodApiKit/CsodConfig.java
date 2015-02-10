@@ -1,9 +1,7 @@
 package CsodApiKit;
 
 /**
- * Created by dhoffman on 2/9/2015.
  * This class is for configuring a connection to the CSOD OData APIs
- * * * 
  */
 public class CsodConfig {
     private String sessionToken; 

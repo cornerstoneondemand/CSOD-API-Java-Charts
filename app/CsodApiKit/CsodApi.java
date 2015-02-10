@@ -28,19 +28,28 @@ public class CsodApi {
         this.config = config;     
         
     }
-    /*
-    * This function puts the date into the proper format to make the CSOD call
-    *
-    *
-    */
+
+    /**
+     * This function puts the date into the proper format to make the CSOD call
+     * @param date the date to be converted
+     * @return the utc date formatted for CSOD
+     */
     private String getUtcDate(Date date){
         SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.000");
         ft.setTimeZone(TimeZone.getTimeZone("UTC"));
         return ft.format(date); 
     }
-    /*
-    * Creates valid CSOD headers to make the call
-    *  
+
+    /**
+     * Creates valid CSOD headers to make the call
+     *  It uses SHA512 encryption
+     * @param url The relative entity URL. This does not contain the query string (e.g. /services/data/Employee)
+     * @param sessionToken The session token
+     * @param sessionSecret The session secret
+     * @param httpVerb The call verb (GET, POST, PUT)
+     * @param utc The CSOD formatted utc date @see getUtcDate
+     * @return The signature for the call.
+     * @throws Exception Throws a generic exception if the hash cannot be generated
      */
     private String getSignature(String url, String sessionToken, String sessionSecret, String httpVerb, String utc) throws Exception {
         
@@ -62,7 +71,13 @@ public class CsodApi {
 
         return signature; 
     }
-
+    /*
+    *  This is a simple way to make a get call to the CSOD
+    * @param entity The entity in the CSOD api that you are referencing
+    * @param query The associated OData query for the entity. It can be blank
+    * @param isDW Specifies to call the Data Warehouse if true. If false it calls the transactional database
+    * 
+    */
     public String getData(String entity, String query, boolean isDW) throws Exception {
         String verb = "GET";
         String entityUrl = (isDW)?"/services/dwdata/"+entity : "/services/data/"+entity;
