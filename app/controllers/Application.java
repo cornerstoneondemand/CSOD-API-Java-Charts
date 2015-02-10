@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import models.Compensation;
 import models.User;
 import models.UserCompensation;
+import models.UserCompensationGroup;
 import play.*;
 import play.libs.Json;
 import play.mvc.*;
@@ -20,6 +21,7 @@ import views.html.*;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Application extends Controller {
 
@@ -46,6 +48,8 @@ public class Application extends Controller {
             //Compensation comp = mapper.readValue(compJson, Compensation.class);
 
             ArrayList<UserCompensation> userComp = new ArrayList<UserCompensation>();
+            HashMap<String, UserCompensationGroup> groupByLocation = new HashMap<String, UserCompensationGroup>(); 
+            
             JsonNode node = null;
             try {
                 node = compMapper.readTree(compJson);
@@ -60,6 +64,18 @@ public class Application extends Controller {
                     for(Compensation c : comp){
                         if(u.getId() == c.getUserID()){
                             userComp.add(new UserCompensation(u,c));
+                            UserCompensationGroup group; 
+                            if(groupByLocation.containsKey(u.getUserLocation())){
+                                group = groupByLocation.get(u.getUserLocation()); 
+                            }else{
+                                group = new UserCompensationGroup(); 
+                                group.setGroupName(u.getUserLocation());
+                                groupByLocation.put(u.getUserLocation(), group); 
+                            }
+                            group.addCompaRatio(c.getCurrentCompaRatio());
+                            group.addTotalSalary(c.getCurrentSalary());
+                            group.setGroupCount(group.getGroupCount()+1);
+                            
                         }
                     }
                 }
@@ -67,7 +83,7 @@ public class Application extends Controller {
             } catch (Exception e) {
                 return badRequest(e.getMessage());
             }
-            return ok((new ObjectMapper()).writeValueAsString(userComp));
+            return ok((new ObjectMapper()).writeValueAsString(groupByLocation));
         }catch (Exception e){
             //do more thorough error handling here
             return badRequest(e.getMessage());
