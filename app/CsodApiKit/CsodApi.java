@@ -7,6 +7,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.security.MessageDigest;
@@ -47,25 +49,30 @@ public class CsodApi {
                 "\n" + "x-csod-session-token:" + sessionToken + "\n" + url;
 
 
-        byte[] secretBytes = sessionSecret.getBytes("UTF-8");
-        byte[] signatureInput = stringToSign.getBytes("UTF-8"); 
-        MessageDigest digest = MessageDigest.getInstance("SHA-512");
-        digest.update(secretBytes);
-        byte[] sigBytes = digest.digest(signatureInput);
-        String signature = Base64.getEncoder().encodeToString(sigBytes);
+        byte[] secretBytes = Base64.getDecoder().decode(sessionSecret);  //sessionSecret.getBytes("UTF-8");
+        byte[] signatureInput = stringToSign.getBytes("UTF-8");
+
+        SecretKeySpec secretkey = new SecretKeySpec(secretBytes, "HmacSHA512");
+
+        Mac hmac = Mac.getInstance("HmacSHA512");
+        hmac.init(secretkey);
+        byte[] data = hmac.doFinal(signatureInput);
+
+        String signature = Base64.getEncoder().encodeToString(data);
+
         return signature; 
     }
 
     public String getData(String entity, String query, boolean isDW) throws Exception {
         String verb = "GET";
-        String entityUrl = (isDW == true)?"/services/dw/" : "/services/data/";
+        String entityUrl = (isDW == true)?"/services/dw/"+entity : "/services/data/"+entity;
         String utc = getUtcDate(new Date());
         String encodedQuery = query.replace(" ", "%20");
         
         String signature = getSignature(entityUrl ,getConfig().getSessionToken(), getConfig().getSessionSecret(), verb, utc);
 
         CloseableHttpClient client = HttpClients.createDefault();
-        HttpGet get = new HttpGet("https://"+config.getPortal()+entityUrl+entity+"?"+encodedQuery);
+        HttpGet get = new HttpGet("https://"+config.getPortal()+entityUrl+"?"+encodedQuery);
         get.setHeader("x-cosd-date", utc);
         get.setHeader("x-csod-session-token", getConfig().getSessionToken());
         get.setHeader("x-csod-signature", signature);
