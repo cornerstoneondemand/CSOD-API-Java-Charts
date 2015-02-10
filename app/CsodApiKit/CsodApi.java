@@ -65,7 +65,7 @@ public class CsodApi {
 
     public String getData(String entity, String query, boolean isDW) throws Exception {
         String verb = "GET";
-        String entityUrl = (isDW == true)?"/services/dw/"+entity : "/services/data/"+entity;
+        String entityUrl = (isDW)?"/services/dwdata/"+entity : "/services/data/"+entity;
         String utc = getUtcDate(new Date());
         String encodedQuery = query.replace(" ", "%20");
         
@@ -73,7 +73,7 @@ public class CsodApi {
 
         CloseableHttpClient client = HttpClients.createDefault();
         HttpGet get = new HttpGet("https://"+config.getPortal()+entityUrl+"?"+encodedQuery);
-        get.setHeader("x-cosd-date", utc);
+        get.setHeader("x-csod-date", utc);
         get.setHeader("x-csod-session-token", getConfig().getSessionToken());
         get.setHeader("x-csod-signature", signature);
 

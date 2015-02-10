@@ -1,7 +1,15 @@
 @(message: String)
 
-@main("Welcome to Play") {
 
-    @play20.welcome(message, style = "Java")
+@scripts = {
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/bubblechart.js")"></script>
 
 }
+@main("Charts demo", scripts) {
+    <div id="series_chart_div" style="width: 900px; height: 500px;"></div>
+
+
+}
+
+

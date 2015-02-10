@@ -25,7 +25,7 @@ public class Application extends Controller {
 
         CsodApi api = new CsodApi(config); 
         try {
-            String result = api.getData("Employee", "$select=Id,FirstName,LastName,DirectManagerId&$filter=Id gt 12", false);
+            String result = api.getData("Transcript", "$select=UserID,ObjectID,TranscriptDueDate,TranscriptCompletionDate&$count", true);
 
             // code to convert to jason
             ObjectMapper mapper = new ObjectMapper();
@@ -41,6 +41,31 @@ public class Application extends Controller {
             return badRequest(e.getMessage());
         }
         
+    }
+    public static Result employees(){
+        CsodConfig config = new CsodConfig();
+        config.setPortal("demopm.csod.com");
+        config.setSessionToken("1ki43lap4igkv");
+        config.setSessionSecret("egNY4u6sJQFYeKB5yMfa4izFGhfbpZKziFoq4kK69pEtVWBicPktJHp7/beji1uLQlWLJm9Rt6TL0PCIurWQUw==");
+
+        CsodApi api = new CsodApi(config);
+        try {
+            String result = api.getData("Employee", "$select=ID, FirstName, LastName &$filter=id gt 12", false);
+
+            // code to convert to jason
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = null;
+            try {
+                node = mapper.readTree(result);
+            } catch (Exception e) {
+                return badRequest(e.getMessage());
+            }
+            return ok(node);
+        }catch (Exception e){
+            //do more thorough error handling here
+            return badRequest(e.getMessage());
+        }
+
     }
 
 }
