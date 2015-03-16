@@ -43,22 +43,14 @@ public class CsodApi {
     /**
      * Creates valid CSOD headers to make the call
      *  It uses SHA512 encryption
-     * @param url The relative entity URL. This does not contain the query string (e.g. /services/data/Employee)
-     * @param sessionToken The session token
-     * @param sessionSecret The session secret
-     * @param httpVerb The call verb (GET, POST, PUT)
-     * @param utc The CSOD formatted utc date @see getUtcDate
+     * @param secretString The session or api secret
+     * @param stringToSign The CSOD formatted string to sign. Could be an API or session call
      * @return The signature for the call.
      * @throws Exception Throws a generic exception if the hash cannot be generated
      */
-    private String getSignature(String url, String sessionToken, String sessionSecret, String httpVerb, String utc) throws Exception {
-        
-        
-        String stringToSign = httpVerb + "\n" + "x-csod-date:" + utc +
-                "\n" + "x-csod-session-token:" + sessionToken + "\n" + url;
+    private String getSignature(String secretString, String stringToSign) throws Exception {
 
-
-        byte[] secretBytes = Base64.getDecoder().decode(sessionSecret);  //sessionSecret.getBytes("UTF-8");
+        byte[] secretBytes = Base64.getDecoder().decode(secretString);  //sessionSecret.getBytes("UTF-8");
         byte[] signatureInput = stringToSign.getBytes("UTF-8");
 
         SecretKeySpec secretkey = new SecretKeySpec(secretBytes, "HmacSHA512");
@@ -71,6 +63,45 @@ public class CsodApi {
 
         return signature; 
     }
+
+    /**
+     * Creates valid CSOD headers to make the call
+     *  It uses SHA512 encryption
+     * @param url The relative entity URL. This does not contain the query string (e.g. /services/data/Employee)
+     * @param apiToken The api token
+     * @param apiSecret The api secret
+     * @param httpVerb The call verb (GET, POST, PUT)
+     * @param utc The CSOD formatted utc date @see getUtcDate
+     * @return The signature for the call.
+     * @throws Exception Throws a generic exception if the hash cannot be generated
+     */
+    private String getApiSignature(String url, String apiToken, String apiSecret, String httpVerb, String utc) throws Exception {
+
+
+        String stringToSign = httpVerb + "\n" + "x-csod-date:" + utc +
+                "\n" + "x-csod-session-token:" + apiToken + "\n" + url;
+
+        return getSignature(apiSecret, stringToSign);
+    }
+
+
+    /**
+     * Creates valid CSOD headers to make the call
+     *  It uses SHA512 encryption
+     * @param url The relative entity URL. This does not contain the query string (e.g. /services/data/Employee)
+     * @param sessionToken The session token
+     * @param sessionSecret The session secret
+     * @param httpVerb The call verb (GET, POST, PUT)
+     * @param utc The CSOD formatted utc date @see getUtcDate
+     * @return The signature for the call.
+     * @throws Exception Throws a generic exception if the hash cannot be generated
+     */
+    private String getSessionSignature(String url, String sessionToken, String sessionSecret, String httpVerb, String utc) throws Exception {
+        String stringToSign = httpVerb + "\n" + "x-csod-date:" + utc +
+                "\n" + "x-csod-session-token:" + sessionToken + "\n" + url;
+        return getSignature(sessionSecret, stringToSign);
+    }
+
     /*
     *  This is a simple way to make a get call to the CSOD
     * @param entity The entity in the CSOD api that you are referencing
@@ -84,7 +115,7 @@ public class CsodApi {
         String utc = getUtcDate(new Date());
         String encodedQuery = query.replace(" ", "%20");
         
-        String signature = getSignature(entityUrl ,getConfig().getSessionToken(), getConfig().getSessionSecret(), verb, utc);
+        String signature = getSessionSignature(entityUrl, getConfig().getSessionToken(), getConfig().getSessionSecret(), verb, utc);
 
         CloseableHttpClient client = HttpClients.createDefault();
         HttpGet get = new HttpGet("https://"+config.getPortal()+entityUrl+"?"+encodedQuery);
@@ -123,6 +154,44 @@ public class CsodApi {
         }
         //return null;
         
+    }
+
+    /**
+     *
+     * @param userName the username for the user you want to generate the session for
+     * @param sessionName the arbitrary name for the session that you are generating
+     * @return
+     */
+    public String generateSession(String userName, String sessionName) throws Exception{
+        String url = "https://"+getConfig().getPortal()+"/services/api/sts/"+userName+"/"+sessionName;
+        String utc = getUtcDate(new Date());
+        String signature = getApiSignature(url, getConfig().getApiToken(), getConfig().getApiSecret(), "GET", utc);
+
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpGet get = new HttpGet(url);
+        get.setHeader("x-csod-date", utc);
+        get.setHeader("x-csod-session-token", getConfig().getApiToken());
+        get.setHeader("x-csod-signature", signature);
+
+        CloseableHttpResponse response = client.execute(get);
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = br.readLine()) != null) {
+            sb.append(line + "\n");
+        }
+        br.close();
+        switch (response.getStatusLine().getStatusCode()) {
+
+            case 200:
+            case 201:
+                return sb.toString();
+            //anything else is an error so throw an exception
+            default:
+                throw new Exception(sb.toString());
+        }
+
     }
 
     public CsodConfig getConfig() {

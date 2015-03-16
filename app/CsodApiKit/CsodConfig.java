@@ -5,8 +5,26 @@ package CsodApiKit;
  */
 public class CsodConfig {
     private String sessionToken; 
-    private String sessionSecret; 
+    private String sessionSecret;
+    private String apiToken;
+    private String apiSecret;
     private String portal;
+
+    public String getApiToken() {
+        return apiToken;
+    }
+
+    public void setApiToken(String apiToken) {
+        this.apiToken = apiToken;
+    }
+
+    public String getApiSecret() {
+        return apiSecret;
+    }
+
+    public void setApiSecret(String apiSecret) {
+        this.apiSecret = apiSecret;
+    }
 
     public String getSessionToken() {
         return sessionToken;

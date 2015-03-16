@@ -38,9 +38,18 @@ public class Application extends Controller {
         config.setPortal(Play.application().configuration().getString("csod.portal"));
         config.setSessionToken(Play.application().configuration().getString("csod.sessionToken"));
         config.setSessionSecret(Play.application().configuration().getString("csod.sessionSecret"));
+        config.setApiSecret(Play.application().configuration().getString("csod.apiSecret"));
+        config.setApiToken(Play.application().configuration().getString("csod.apiToken"));
 
-        CsodApi api = new CsodApi(config); 
+
+
+        CsodApi api = new CsodApi(config);
+
+
+
         try {
+            String sessionInfo = api.generateSession("dhoffman", "testSession53");
+
             String compJson = api.getData("CurrentCompensation", "$select=UserID,CurrentCompaRatio,CurrentSalary", true);
             String userJson = api.getData("User", "$select=UserID,UserDivision,UserPosition,UserLocation,UserManagerId", true);
 
