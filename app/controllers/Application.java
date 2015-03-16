@@ -2,6 +2,7 @@ package controllers;
 
 import CsodApiKit.CsodApi;
 import CsodApiKit.CsodConfig;
+import CsodApiKit.CsodSession;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -21,7 +22,9 @@ import views.html.*;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Random;
 
 public class Application extends Controller {
 
@@ -36,8 +39,6 @@ public class Application extends Controller {
     public static Result data(){
         CsodConfig config = new CsodConfig(); 
         config.setPortal(Play.application().configuration().getString("csod.portal"));
-        config.setSessionToken(Play.application().configuration().getString("csod.sessionToken"));
-        config.setSessionSecret(Play.application().configuration().getString("csod.sessionSecret"));
         config.setApiSecret(Play.application().configuration().getString("csod.apiSecret"));
         config.setApiToken(Play.application().configuration().getString("csod.apiToken"));
 
@@ -48,8 +49,11 @@ public class Application extends Controller {
 
 
         try {
-            String sessionInfo = api.generateSession("dhoffman", "testSession53");
+            String userName = "dhoffman"; // put your username here
+            String sessionName = userName + (new Date()).getTime();
 
+            CsodSession session = api.generateSession(userName, sessionName);
+            config.setSession(session);
             String compJson = api.getData("CurrentCompensation", "$select=UserID,CurrentCompaRatio,CurrentSalary", true);
             String userJson = api.getData("User", "$select=UserID,UserDivision,UserPosition,UserLocation,UserManagerId", true);
 
@@ -106,11 +110,16 @@ public class Application extends Controller {
     public static Result employees(){
         CsodConfig config = new CsodConfig();
         config.setPortal(Play.application().configuration().getString("csod.portal"));
-        config.setSessionToken(Play.application().configuration().getString("csod.sessionToken"));
-        config.setSessionSecret(Play.application().configuration().getString("csod.sessionSecret"));
+        config.setApiSecret(Play.application().configuration().getString("csod.apiSecret"));
+        config.setApiToken(Play.application().configuration().getString("csod.apiToken"));
 
         CsodApi api = new CsodApi(config);
         try {
+            String userName = "dhoffman"; // put your username here
+            String sessionName = userName + (new Date()).getTime();
+
+            CsodSession session = api.generateSession(userName, sessionName);
+            config.setSession(session);
             String result = api.getData("Employee", "$select=ID, FirstName, LastName &$filter=id gt 12", false);
 
             // code to convert to jason

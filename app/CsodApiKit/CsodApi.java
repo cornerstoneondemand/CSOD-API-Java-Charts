@@ -1,11 +1,13 @@
 package CsodApiKit;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import play.libs.Json;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -78,8 +80,8 @@ public class CsodApi {
     private String getApiSignature(String url, String apiToken, String apiSecret, String httpVerb, String utc) throws Exception {
 
 
-        String stringToSign = httpVerb + "\n" + "x-csod-date:" + utc +
-                "\n" + "x-csod-session-token:" + apiToken + "\n" + url;
+        String stringToSign = httpVerb + "\n" + "x-csod-api-key:" + apiToken + "\n" + "x-csod-date:" + utc +
+                 "\n" + url;
 
         return getSignature(apiSecret, stringToSign);
     }
@@ -115,12 +117,12 @@ public class CsodApi {
         String utc = getUtcDate(new Date());
         String encodedQuery = query.replace(" ", "%20");
         
-        String signature = getSessionSignature(entityUrl, getConfig().getSessionToken(), getConfig().getSessionSecret(), verb, utc);
+        String signature = getSessionSignature(entityUrl, getConfig().getSession().getSessionToken(), getConfig().getSession().getSessionSecret(), verb, utc);
 
         CloseableHttpClient client = HttpClients.createDefault();
         HttpGet get = new HttpGet("https://"+config.getPortal()+entityUrl+"?"+encodedQuery);
         get.setHeader("x-csod-date", utc);
-        get.setHeader("x-csod-session-token", getConfig().getSessionToken());
+        get.setHeader("x-csod-session-token", getConfig().getSession().getSessionToken());
         get.setHeader("x-csod-signature", signature);
 
         CloseableHttpResponse response = client.execute(get);
@@ -160,20 +162,23 @@ public class CsodApi {
      *
      * @param userName the username for the user you want to generate the session for
      * @param sessionName the arbitrary name for the session that you are generating
-     * @return
+     * @return returns the new session information
      */
-    public String generateSession(String userName, String sessionName) throws Exception{
-        String url = "https://"+getConfig().getPortal()+"/services/api/sts/"+userName+"/"+sessionName;
+    public CsodSession generateSession(String userName, String sessionName) throws Exception{
+        String relativeUrl = "/services/api/sts/GenerateSession/"+userName+"/"+sessionName;
+        String url = "https://"+getConfig().getPortal() + relativeUrl;
         String utc = getUtcDate(new Date());
-        String signature = getApiSignature(url, getConfig().getApiToken(), getConfig().getApiSecret(), "GET", utc);
+        String signature = getApiSignature(relativeUrl, getConfig().getApiToken(), getConfig().getApiSecret(), "GET", utc);
 
         CloseableHttpClient client = HttpClients.createDefault();
         HttpGet get = new HttpGet(url);
+        //get.setHeader("Content-Type", "application/json");
         get.setHeader("x-csod-date", utc);
-        get.setHeader("x-csod-session-token", getConfig().getApiToken());
+        get.setHeader("x-csod-api-key", getConfig().getApiToken());
         get.setHeader("x-csod-signature", signature);
 
         CloseableHttpResponse response = client.execute(get);
+
 
         BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
         StringBuilder sb = new StringBuilder();
@@ -186,8 +191,11 @@ public class CsodApi {
 
             case 200:
             case 201:
-                return sb.toString();
-            //anything else is an error so throw an exception
+                JsonNode node = Json.parse(sb.toString());
+                node = node.findValue("data");
+                return new CsodSession(node.findValue("Token").asText(), node.findValue("Secret").asText());
+
+                //anything else is an error so throw an exception
             default:
                 throw new Exception(sb.toString());
         }

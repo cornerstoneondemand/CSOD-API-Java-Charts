@@ -4,11 +4,22 @@ package CsodApiKit;
  * This class is for configuring a connection to the CSOD OData APIs
  */
 public class CsodConfig {
-    private String sessionToken; 
-    private String sessionSecret;
+
     private String apiToken;
     private String apiSecret;
     private String portal;
+
+
+
+    private CsodSession session;
+
+    public CsodSession getSession() {
+        return session;
+    }
+
+    public void setSession(CsodSession session) {
+        this.session = session;
+    }
 
     public String getApiToken() {
         return apiToken;
@@ -24,22 +35,6 @@ public class CsodConfig {
 
     public void setApiSecret(String apiSecret) {
         this.apiSecret = apiSecret;
-    }
-
-    public String getSessionToken() {
-        return sessionToken;
-    }
-
-    public void setSessionToken(String sessionToken) {
-        this.sessionToken = sessionToken;
-    }
-
-    public String getSessionSecret() {
-        return sessionSecret;
-    }
-
-    public void setSessionSecret(String sessionSecret) {
-        this.sessionSecret = sessionSecret;
     }
 
     public String getPortal() {
